@@ -1,0 +1,86 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    name: 后端（vet + 单元/替身/e2e 测试）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - name: 下载依赖
+        run: go mod download
+      - name: go vet
+        run: go vet ./...
+      - name: 单元 / 线协议 / e2e 测试
+        run: go test ./... -count=1 -v 2>&1 | tee test.log
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: backend-test-log
+          path: test.log
+
+  integration:
+    name: 集成（真实 OpenLDAP）
+    runs-on: ubuntu-latest
+    services:
+      openldap:
+        image: osixia/openldap:1.5.0
+        env:
+          LDAP_DOMAIN: example.cn
+          LDAP_ADMIN_PASSWORD: adminpass
+        ports:
+          - 1389:389   # osixia/openldap 容器内固定监听 389（不是 1389）
+        options: >-
+          --health-cmd "ldapsearch -x -H ldap://localhost:389 -b dc=example,dc=cn (objectClass=*)"
+          --health-interval 5s --health-timeout 5s --health-retries 12
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
+      - name: 真实 OpenLDAP 集成测试
+        env:
+          LDAP_IT_URL: ldap://localhost:1389
+          LDAP_IT_BIND_DN: cn=admin,dc=example,dc=cn
+          LDAP_IT_PASSWORD: adminpass
+          LDAP_IT_BASE_DN: dc=example,dc=cn
+        run: go test ./internal/ldapclient/ -run Integration -v -count=1
+
+  frontend:
+    name: 前端（构建）
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - name: 安装依赖
+        working-directory: web
+        run: npm ci --no-audit --no-fund
+      - name: 类型检查
+        working-directory: web
+        run: npm run typecheck
+      - name: 构建
+        working-directory: web
+        run: npm run build
+
+  docker:
+    name: Docker 镜像
+    runs-on: ubuntu-latest
+    needs: [backend, frontend]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: 构建镜像（不推送）
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: newldap:ci
