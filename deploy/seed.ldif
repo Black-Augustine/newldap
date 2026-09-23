@@ -1,0 +1,273 @@
+# 测试数据：部门（含中文名/排序）+ 人员 + 用户组
+# admin 密码 admin123 由容器环境设置；人员密码统一 Passw0rd!
+
+# ---------- 部门 ----------
+dn: ou=tech,dc=example,dc=cn
+objectClass: top
+objectClass: organizationalUnit
+objectClass: newldapOUExtras
+ou: tech
+ou: 技术部
+description: 研发与技术支撑
+ouOrder: 10
+
+dn: ou=product,dc=example,dc=cn
+objectClass: top
+objectClass: organizationalUnit
+objectClass: newldapOUExtras
+ou: product
+ou: 产品部
+description: 产品设计与需求
+ouOrder: 20
+
+dn: ou=market,dc=example,dc=cn
+objectClass: top
+objectClass: organizationalUnit
+objectClass: newldapOUExtras
+ou: market
+ou: 市场部
+description: 市场与品牌
+ouOrder: 30
+
+dn: ou=hr,dc=example,dc=cn
+objectClass: top
+objectClass: organizationalUnit
+objectClass: newldapOUExtras
+ou: hr
+ou: 人事部
+description: 人事行政
+ouOrder: 40
+
+dn: ou=groups,dc=example,dc=cn
+objectClass: top
+objectClass: organizationalUnit
+objectClass: newldapOUExtras
+ou: groups
+ou: 用户组
+description: 权限组与登录组
+ouOrder: 90
+
+# ---------- 命名人员（tech） ----------
+dn: uid=zhangwei,ou=tech,dc=example,dc=cn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: zhangwei
+cn: 张伟
+sn: 张
+title: 平台研发工程师
+employeeNumber: E1001
+mail: zhangwei@example.cn
+mobile: 138-1001-0000
+userPassword: Passw0rd!
+
+dn: uid=lina,ou=tech,dc=example,dc=cn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: lina
+cn: 李娜
+sn: 李
+title: 应用研发工程师
+employeeNumber: E1002
+mail: lina@example.cn
+mobile: 138-1002-0000
+userPassword: Passw0rd!
+
+dn: uid=wangqiang,ou=tech,dc=example,dc=cn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: wangqiang
+cn: 王强
+sn: 王
+title: 运维工程师
+employeeNumber: E1003
+mail: wangqiang@example.cn
+mobile: 138-1003-0000
+userPassword: Passw0rd!
+
+dn: uid=chenjing,ou=tech,dc=example,dc=cn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: chenjing
+cn: 陈静
+sn: 陈
+title: 测试工程师
+employeeNumber: E1005
+mail: chenjing@example.cn
+mobile: 138-1005-0000
+userPassword: Passw0rd!
+
+# ---------- 其他部门人员 ----------
+dn: uid=fengxue,ou=product,dc=example,dc=cn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: fengxue
+cn: 冯雪
+sn: 冯
+title: 产品经理
+employeeNumber: E2001
+mail: fengxue@example.cn
+mobile: 138-2001-0000
+userPassword: Passw0rd!
+
+dn: uid=hanmei,ou=market,dc=example,dc=cn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: hanmei
+cn: 韩梅
+sn: 韩
+title: 市场专员
+employeeNumber: E3001
+mail: hanmei@example.cn
+mobile: 138-3001-0000
+userPassword: Passw0rd!
+
+dn: uid=sunli,ou=hr,dc=example,dc=cn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: sunli
+cn: 孙丽
+sn: 孙
+title: 人事专员
+employeeNumber: E4001
+mail: sunli@example.cn
+mobile: 138-4001-0000
+userPassword: Passw0rd!
+
+# ---------- 批量测试人员（编号，分布在各部门） ----------
+dn: uid=test01,ou=tech,dc=example,dc=cn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: test01
+cn: 测试员工一
+sn: 测
+employeeNumber: T0001
+mail: test01@example.cn
+userPassword: Passw0rd!
+
+dn: uid=test02,ou=tech,dc=example,dc=cn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: test02
+cn: 测试员工二
+sn: 测
+employeeNumber: T0002
+mail: test02@example.cn
+userPassword: Passw0rd!
+
+dn: uid=test03,ou=tech,dc=example,dc=cn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: test03
+cn: 测试员工三
+sn: 测
+employeeNumber: T0003
+mail: test03@example.cn
+userPassword: Passw0rd!
+
+dn: uid=test04,ou=product,dc=example,dc=cn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: test04
+cn: 测试员工四
+sn: 测
+employeeNumber: T0004
+mail: test04@example.cn
+userPassword: Passw0rd!
+
+dn: uid=test05,ou=product,dc=example,dc=cn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: test05
+cn: 测试员工五
+sn: 测
+employeeNumber: T0005
+mail: test05@example.cn
+userPassword: Passw0rd!
+
+dn: uid=test06,ou=market,dc=example,dc=cn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: test06
+cn: 测试员工六
+sn: 测
+employeeNumber: T0006
+mail: test06@example.cn
+userPassword: Passw0rd!
+
+dn: uid=test07,ou=market,dc=example,dc=cn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: test07
+cn: 测试员工七
+sn: 测
+employeeNumber: T0007
+mail: test07@example.cn
+userPassword: Passw0rd!
+
+dn: uid=test08,ou=hr,dc=example,dc=cn
+objectClass: top
+objectClass: person
+objectClass: organizationalPerson
+objectClass: inetOrgPerson
+uid: test08
+cn: 测试员工八
+sn: 测
+employeeNumber: T0008
+mail: test08@example.cn
+userPassword: Passw0rd!
+
+# ---------- 用户组 ----------
+dn: cn=vpn-access,ou=groups,dc=example,dc=cn
+objectClass: top
+objectClass: groupOfNames
+cn: vpn-access
+description: 远程 VPN 接入授权
+member: uid=zhangwei,ou=tech,dc=example,dc=cn
+member: uid=fengxue,ou=product,dc=example,dc=cn
+member: uid=hanmei,ou=market,dc=example,dc=cn
+
+dn: cn=gitlab,ou=groups,dc=example,dc=cn
+objectClass: top
+objectClass: groupOfNames
+cn: gitlab
+description: 代码仓库访问授权
+member: uid=zhangwei,ou=tech,dc=example,dc=cn
+member: uid=lina,ou=tech,dc=example,dc=cn
+member: uid=chenjing,ou=tech,dc=example,dc=cn
+
+dn: cn=linux-login,ou=groups,dc=example,dc=cn
+objectClass: top
+objectClass: posixGroup
+cn: linux-login
+gidNumber: 5000
+description: Linux 主机登录组
+memberUid: zhangwei
+memberUid: wangqiang
