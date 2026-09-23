@@ -1,0 +1,25 @@
+# 构建产物 / 二进制
+newldap-server
+newldap-server.exe
+deploy/newldap-server
+*.exe
+*.zip
+*.tar.gz
+
+# 前端
+web/node_modules/
+web/dist/*
+!web/dist/index.html
+
+# 运行期数据（会话/审计/连接档案）
+data/
+
+# 本地工具与临时文件
+prototype/.serve.js
+patch-*.cjs
+.zcodeignore
+*.log
+
+# 环境与密钥（示例 compose 中的密码仅供演示，真实环境用 .env 覆盖且不入库）
+.env
+*.env.local
