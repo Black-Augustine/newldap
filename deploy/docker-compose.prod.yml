@@ -1,0 +1,49 @@
+# NewLDAP + OpenLDAP + phpLDAPadmin 生产形态部署（<服务器IP>）
+services:
+  openldap:
+    image: osixia/openldap:1.5.0
+    environment:
+      LDAP_ORGANISATION: 示例公司
+      LDAP_DOMAIN: example.cn
+      LDAP_ADMIN_PASSWORD: admin123
+      LDAP_RFC2307BIS_SCHEMA: "false"
+    volumes:
+      - openldap-data:/var/lib/ldap
+      - openldap-config:/etc/ldap/slapd.d
+    healthcheck:
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost:1389", "-b", "dc=example,dc=cn", "(objectClass=*)"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+
+  newldap:
+    build: .
+    depends_on:
+      openldap:
+        condition: service_healthy
+    environment:
+      LDAP_URL: ldap://openldap:1389
+      LDAP_BIND_DN: cn=admin,dc=example,dc=cn
+      LDAP_BIND_PASSWORD: admin123
+      LDAP_BASE_DN: dc=example,dc=cn
+      NEWLDAP_ADDR: ":8080"
+      NEWLDAP_PLDA_URL: http://<服务器IP>:8081
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  phpldapadmin:
+    image: osixia/phpldapadmin:0.9.0
+    depends_on:
+      openldap:
+        condition: service_healthy
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: "#PYTHON2BASH:[{'openldap': [{'server': [{'tls': False}]}, {'login': [{'bind_id': 'cn=admin,dc=example,dc=cn'}, {'bind_pass': 'admin123'}]}]}]"
+      PHPLDAPADMIN_HTTPS: "false"
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+
+volumes:
+  openldap-data:
+  openldap-config:

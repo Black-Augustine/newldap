@@ -1,0 +1,5 @@
+dn: cn=newldap,cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: newldap
+olcAttributeTypes: ( 1.3.6.1.4.1.99999.1 NAME 'ouOrder' DESC 'NewLDAP: display order of OU nodes' EQUALITY integerMatch SYNTAX 1.3.6.1.4.1.1466.115.121.1.27 SINGLE-VALUE )
+olcObjectClasses: ( 1.3.6.1.4.1.99999.2 NAME 'newldapOUExtras' DESC 'NewLDAP OU extensions' SUP top AUXILIARY MAY ( ouOrder ) )

@@ -1,0 +1,56 @@
+# 伴随形态样例：OpenLDAP + NewLDAP 一键起栈（R1.1/R1.2）
+# 用法：cd deploy && docker compose up -d
+# 首次启动后访问 http://<host>:8080 连接向导/建库向导（LDAP 端口不暴露宿主机）
+services:
+  openldap:
+    image: osixia/openldap:1.5.0
+    environment:
+      LDAP_ORGANISATION: 示例公司
+      LDAP_DOMAIN: example.cn
+      LDAP_ADMIN_PASSWORD: change-me-please
+      LDAP_RFC2307BIS_SCHEMA: "false"
+    volumes:
+      - openldap-data:/var/lib/ldap
+      - openldap-config:/etc/ldap/slapd.d
+    healthcheck:
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost:1389", "-b", "dc=example,dc=cn", "(objectClass=*)"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+    # 注意：不映射 389/636 到宿主机 —— 外部只能通过 NewLDAP 的 Web 界面访问目录
+
+  newldap:
+    build:
+      context: ..
+      dockerfile: Dockerfile
+    depends_on:
+      openldap:
+        condition: service_healthy
+    environment:
+      # 环境变量预配置（R1.2）：起来即用，跳过连接向导
+      LDAP_URL: ldap://openldap:1389
+      LDAP_BIND_DN: cn=admin,dc=example,dc=cn
+      LDAP_BIND_PASSWORD: change-me-please
+      LDAP_BASE_DN: dc=example,dc=cn
+      NEWLDAP_ADDR: ":8080"
+      # 侧栏显示 phpLDAPadmin 跳转按钮（交叉验证目录即真相）
+      NEWLDAP_PLDA_URL: http://localhost:8081
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+  # phpLDAPadmin：经典目录管理台，与 NewLDAP 共管同一 OpenLDAP（并存验证）
+  phpldapadmin:
+    image: gtbcf/phpldapadmin:latest
+    depends_on:
+      openldap:
+        condition: service_healthy
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: "#PYTHON2BASH:[{'openldap': [{'server': [{'tls': False}]}, {'login': [{'bind_id': 'cn=admin,dc=example,dc=cn'}, {'bind_pass': 'change-me-please'}]}]}]"
+    ports:
+      - "8081:80"
+    restart: unless-stopped
+
+volumes:
+  openldap-data:
+  openldap-config:

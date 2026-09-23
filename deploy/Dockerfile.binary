@@ -1,0 +1,4 @@
+FROM alpine:3.20
+COPY newldap-server /usr/local/bin/newldap-server
+EXPOSE 8080
+ENTRYPOINT ["newldap-server"]
