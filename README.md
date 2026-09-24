@@ -28,6 +28,18 @@
 | 审计日志 | 全操作留痕，JSONL 落盘，可导出 CSV |
 | 演示模式 | `--mock` 内置示例目录，零依赖体验全部功能 |
 
+## 界面预览
+
+| 概览（目录树 + 连接健康状态） | 组织与人员 |
+| --- | --- |
+| ![概览](docs/screenshots/01-overview.png) | ![组织与人员](docs/screenshots/03-people.png) |
+| **人员详情与编辑** | **用户组（权限组 / 登录组）** |
+| ![人员详情](docs/screenshots/09-person-detail.png) | ![用户组](docs/screenshots/04-groups.png) |
+| **Excel 导入导出** | **审计日志** |
+| ![导入导出](docs/screenshots/08-import.png) | ![审计日志](docs/screenshots/05-audit.png) |
+| **员工自助改密** | **帮助中心（LDAP 教学 / 对接指引）** |
+| ![自助改密](docs/screenshots/07-password.png) | ![帮助中心](docs/screenshots/06-help.png) |
+
 ## 快速开始
 
 ### 方式 A：Docker 一键体验（OpenLDAP + NewLDAP + phpLDAPadmin 三件套）
