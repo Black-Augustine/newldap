@@ -1,0 +1,108 @@
+/* ============================================================
+   NewLDAP 设计系统（与 prototype/prototype.css 同源）
+   叠加在 Element Plus 主题变量之上
+   ============================================================ */
+:root {
+  /* 品牌色映射到 Element Plus */
+  --el-color-primary: #2f54eb;
+  --el-color-primary-light-3: #6880f0;
+  --el-color-primary-light-5: #96a8f5;
+  --el-color-primary-light-7: #c2cdfa;
+  --el-color-primary-light-8: #d8e0fc;
+  --el-color-primary-light-9: #f0f5ff;
+  --el-color-primary-dark-2: #1d39c4;
+  --el-border-radius-base: 8px;
+  --el-border-radius-small: 6px;
+  --el-border-radius-round: 12px;
+  --el-font-size-base: 13px;
+  --el-text-color-primary: #1f2329;
+  --el-text-color-regular: #4e5561;
+  --el-text-color-secondary: #646a73;
+  --el-text-color-placeholder: #8f959e;
+  --el-border-color: #e5e6eb;
+  --el-border-color-light: #e5e6eb;
+  --el-border-color-lighter: #f0f1f3;
+  --el-fill-color-light: #f2f3f5;
+  --el-bg-color-page: #f5f6f7;
+  --el-box-shadow-light: 0 2px 8px rgba(31, 35, 41, 0.06);
+
+  --nl-ok: #2ea121;
+  --nl-ok-bg: #ebf8e8;
+  --nl-warn: #d46b08;
+  --nl-warn-bg: #fff3e0;
+  --nl-dgr: #e5484d;
+  --nl-dgr-bg: #fdedec;
+}
+
+body {
+  font-size: 13px;
+  color: var(--el-text-color-primary);
+  background: var(--el-bg-color-page);
+}
+
+.mono { font-family: ui-monospace, Consolas, 'SFMono-Regular', Menlo, monospace; font-size: 12px; }
+.muted { color: var(--el-text-color-placeholder); font-size: 12px; }
+
+/* ---------- 页面骨架 ---------- */
+.nl-page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 14px; flex-wrap: wrap; }
+.nl-page-head h2 { margin: 0 0 5px; font-size: 19px; display: flex; align-items: center; gap: 10px; }
+.nl-page-head .crumb { font-size: 12px; color: var(--el-text-color-placeholder); display: flex; align-items: center; gap: 5px; }
+.nl-page-head .ops { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+.nl-card { background: #fff; border: 1px solid var(--el-border-color); border-radius: 12px; box-shadow: var(--el-box-shadow-light); }
+.nl-card-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--el-border-color-lighter); }
+.nl-card-head .t { font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+.nl-card-body { padding: 18px; }
+
+/* ---------- KPI 卡（概览） ---------- */
+.nl-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 16px; }
+.nl-kpi { padding: 16px; display: flex; gap: 14px; align-items: center; }
+.nl-kpi .ico { width: 42px; height: 42px; border-radius: 10px; background: #f0f5ff; color: var(--el-color-primary); display: flex; align-items: center; justify-content: center; flex: none; }
+.nl-kpi .v { font-size: 22px; font-weight: 600; line-height: 1.1; }
+.nl-kpi .k { font-size: 12px; color: var(--el-text-color-placeholder); margin-top: 3px; }
+
+/* ---------- 表格打磨 ---------- */
+.nl-table-wrap .el-table { --el-table-header-bg-color: #fafbfc; --el-table-header-text-color: #646a73; font-size: 13px; }
+.nl-table-wrap .el-table th.el-table__cell { font-weight: 500; }
+.nl-avatar { width: 28px; height: 28px; border-radius: 50%; background: #f0f5ff; border: 1px solid #adc6ff; color: var(--el-color-primary); display: inline-flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; flex: none; }
+.nl-avatar.gray { background: #f2f3f5; border-color: var(--el-border-color); color: #646a73; }
+.nl-avatar.lg { width: 44px; height: 44px; font-size: 16px; }
+.nl-row-ops .el-button + .el-button { margin-left: 2px; }
+
+/* ---------- 工具条 ---------- */
+.nl-toolbar { display: flex; align-items: center; gap: 10px; padding: 12px 14px; border-bottom: 1px solid var(--el-border-color-lighter); flex-wrap: wrap; }
+.nl-toolbar .spacer { flex: 1; }
+
+/* ---------- 徽章/胶囊 ---------- */
+.nl-pill { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 9px; border-radius: 11px; font-size: 12px; line-height: 1; white-space: nowrap; }
+.nl-pill .dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+.nl-pill.ok { background: var(--nl-ok-bg); color: var(--nl-ok); }
+.nl-pill.warn { background: var(--nl-warn-bg); color: var(--nl-warn); }
+.nl-pill.dgr { background: var(--nl-dgr-bg); color: var(--nl-dgr); }
+.nl-pill.info { background: #f0f5ff; color: var(--el-color-primary); }
+.nl-pill.plain { background: #f2f3f5; color: #646a73; }
+
+/* ---------- 提示条 ---------- */
+.nl-hint { display: flex; gap: 10px; padding: 10px 14px; border-radius: 8px; font-size: 12.5px; line-height: 1.6; align-items: flex-start; }
+.nl-hint.info { background: #f0f5ff; color: #3147a3; }
+.nl-hint.ok { background: var(--nl-ok-bg); color: #237a1b; }
+.nl-hint.warn { background: var(--nl-warn-bg); color: #a24e08; }
+.nl-hint.dgr { background: var(--nl-dgr-bg); color: #b3383c; }
+
+/* ---------- 空状态 / 步骤 / 术语 ---------- */
+.nl-empty { padding: 46px 20px; }
+.nl-sec-title { font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 7px; margin: 18px 0 10px; }
+.nl-sec-title::after { content: ''; flex: 1; height: 1px; background: var(--el-border-color-lighter); }
+
+.term { border-bottom: 1px dashed var(--el-text-color-placeholder); cursor: help; }
+.term:hover { border-bottom-color: var(--el-color-primary); color: var(--el-color-primary); }
+
+/* ---------- 按钮微调 ---------- */
+.el-button { font-size: 13px; }
+.el-button--primary { font-weight: 500; }
+
+/* ---------- 滚动条 ---------- */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-thumb { background: #d5d9e0; border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: #b8bec8; }
+::-webkit-scrollbar-track { background: transparent; }

@@ -1,0 +1,10 @@
+:root { color-scheme: light }
+* { box-sizing: border-box }
+body {
+  margin: 0;
+  font-family: -apple-system, 'PingFang SC', 'HarmonyOS Sans SC', 'Microsoft YaHei', sans-serif;
+  font-size: 13px;
+  color: #1f2329;
+  background: #f5f6f7;
+}
+.mono { font-family: Consolas, 'SFMono-Regular', monospace; font-size: 12px; }
