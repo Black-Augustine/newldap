@@ -81,4 +81,4 @@ cd web && npm install && npm run dev
 
 ## 许可
 
-暂未设定（待项目所有者确定）。
+本项目以 [MIT License](LICENSE) 开源。
