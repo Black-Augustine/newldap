@@ -35,6 +35,8 @@ services:
       NEWLDAP_ADDR: ":8080"
       # 侧栏显示 phpLDAPadmin 跳转按钮（交叉验证目录即真相）
       NEWLDAP_PLDA_URL: http://localhost:8081
+    volumes:
+      - newldap-data:/data
     ports:
       - "8080:8080"
     restart: unless-stopped
@@ -54,3 +56,4 @@ services:
 volumes:
   openldap-data:
   openldap-config:
+  newldap-data:

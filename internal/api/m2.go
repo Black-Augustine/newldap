@@ -90,6 +90,17 @@ func (d *Deps) handlePersonCreate(w http.ResponseWriter, r *http.Request, s *aut
 		writeErr(w, http.StatusBadRequest, "请求体不合法")
 		return
 	}
+	// 录入策略（系统设置）：账号长度 + 指定初始密码时的复杂度
+	if err := d.curPolicy().ValidateUID(req.UID); err != nil {
+		writeErr(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if req.Initial != "" {
+		if err := d.curPolicy().ValidatePassword(req.Initial); err != nil {
+			writeErr(w, http.StatusBadRequest, err.Error())
+			return
+		}
+	}
 	dn, initial, err := people.New(s.Conn, d.curProfile().BaseDN).Create(req)
 	if err != nil {
 		writeErr(w, http.StatusBadRequest, err.Error())
@@ -136,6 +147,13 @@ func (d *Deps) handlePersonPassword(w http.ResponseWriter, r *http.Request, s *a
 	if err := readJSON(r, &req); err != nil || req.DN == "" {
 		writeErr(w, http.StatusBadRequest, "请求体不合法（需要 dn）")
 		return
+	}
+	// 管理员指定的密码按策略校验；留空则由生成器产出（本身满足强度）
+	if req.Password != "" {
+		if err := d.curPolicy().ValidatePassword(req.Password); err != nil {
+			writeErr(w, http.StatusBadRequest, err.Error())
+			return
+		}
 	}
 	pw, err := people.New(s.Conn, d.curProfile().BaseDN).ResetPassword(req.DN, req.Password)
 	if err != nil {

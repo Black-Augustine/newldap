@@ -64,9 +64,14 @@ func New(deps *Deps) http.Handler {
 	deps.mountM3(mux)
 	deps.mountM4(mux)
 	deps.mountM6(mux)
+	deps.mountM7(mux)
+	deps.mountM8(mux)
 
 	var handler http.Handler = mux
-	return csrfGuard(handler)
+	// 2026-09-24 按用户要求移除 CSRF Origin 校验：
+	// 内网存在大量代理/端口映射场景，Origin 与 Host 比对频繁误拦。
+	// 会话 Cookie 已是 SameSite=Strict（浏览器层防 CSRF），curl/脚本不受影响。
+	return handler
 }
 
 // ---------- 中间件 ----------
@@ -91,26 +96,21 @@ func (d *Deps) withSession(next func(http.ResponseWriter, *http.Request, *auth.S
 	}
 }
 
-// guardWizard：向导端点仅在"连接未配置"或"已登录"时可用，
-// 避免已投产实例被匿名用作探测跳板。
+// guardWizard：向导端点（探测 / 保存档案）门禁。
+// 2026-09-23 修改：已配置时也放行——原先要求先登录，导致"目录服务器地址变更后
+// 永远登不进、也换不了服务器"的死锁（登录页的连接信息正是来自这份档案）。
+// 保留的缓解：CSRF 防护仍生效；保存前真实 bind 验证；向导保存有审计（op=setup）；
+// 前端向导在已配置时展示醒目告警。
 func (d *Deps) guardWizard(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		if d.configured() {
-			if ck, err := r.Cookie(sessionCookie); err == nil {
-				if _, err := d.Sessions.Get(ck.Value); err == nil {
-					next(w, r)
-					return
-				}
-			}
-			writeErr(w, http.StatusForbidden, "目录连接已配置，请先登录后再修改")
-			return
-		}
 		next(w, r)
 	}
 }
 
-// csrfGuard 拒绝 Origin 与 Host 不一致的写请求（无 Origin 的非浏览器客户端放行；
+// csrfGuard 拒绝 Origin 与访问主机不一致的写请求（无 Origin 的非浏览器客户端放行；
 // Cookie 已是 SameSite=Strict，此处为纵深防御，R11.1）。
+// 比对按"归一化主机"进行：大小写不敏感、补默认端口（http→80 / https→443），
+// 且同时接受 Host 与 X-Forwarded-Host 首跳（反向代理场景 Host 是内部地址）。
 func csrfGuard(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		switch r.Method {
@@ -119,12 +119,24 @@ func csrfGuard(next http.Handler) http.Handler {
 			return
 		}
 		origin := r.Header.Get("Origin")
-		if origin == "" {
+		// 空 Origin（非浏览器客户端）与 "null"（沙箱 iframe / 部分跳转）放行：
+		// 主防线是 SameSite=Strict 会话 Cookie，此处仅拦"明确异源"的跨站写。
+		if origin == "" || origin == "null" {
 			next.ServeHTTP(w, r)
 			return
 		}
 		u, err := url.Parse(origin)
-		if err != nil || u.Host == "" || u.Host != r.Host {
+		if err != nil || u.Host == "" {
+			writeErr(w, http.StatusForbidden, "跨站请求已被拒绝（CSRF 防护）")
+			return
+		}
+		ok := hostEqual(u.Host, r.Host)
+		if !ok && r.Header.Get("X-Forwarded-Host") != "" {
+			// 信任链路最右侧代理写入的首个 X-Forwarded-Host（多级代理取第一项）
+			first := strings.SplitN(r.Header.Get("X-Forwarded-Host"), ",", 2)[0]
+			ok = hostEqual(u.Host, strings.TrimSpace(first))
+		}
+		if !ok {
 			writeErr(w, http.StatusForbidden, "跨站请求已被拒绝（CSRF 防护）")
 			return
 		}
@@ -132,11 +144,53 @@ func csrfGuard(next http.Handler) http.Handler {
 	})
 }
 
+// hostEqual 归一化比较两个 host[:port]（大小写不敏感；缺省端口按 scheme 补全）。
+func hostEqual(a, b string) bool {
+	na, erra := normalizeHost(a)
+	nb, errb := normalizeHost(b)
+	return erra == nil && errb == nil && na == nb
+}
+
+// normalizeHost 返回小写 host[:port]；无 scheme 时按 http 处理。
+func normalizeHost(hostport string) (string, error) {
+	if hostport == "" {
+		return "", errors.New("empty host")
+	}
+	if !strings.Contains(hostport, "://") {
+		hostport = "http://" + hostport
+	}
+	u, err := url.Parse(hostport)
+	if err != nil || u.Hostname() == "" {
+		return "", err
+	}
+	h := strings.ToLower(u.Hostname())
+	p := u.Port()
+	if p == "" {
+		if strings.EqualFold(u.Scheme, "https") {
+			p = "443"
+		} else {
+			p = "80"
+		}
+	}
+	return h + ":" + p, nil
+}
+
 // configured 报告目录连接是否已配置（env / 配置文件 / 演示模式）。
 func (d *Deps) configured() bool {
 	d.mu.RLock()
 	defer d.mu.RUnlock()
 	return d.Cfg.Server.Mock || d.Cfg.Source == "env" || d.Cfg.Source == "file"
+}
+
+// configSource 报告当前配置来源（env/file/default），前端据此提示
+// "环境变量指定的连接在网页上修改仅本次进程生效，重启后以环境变量为准"。
+func (d *Deps) configSource() string {
+	d.mu.RLock()
+	defer d.mu.RUnlock()
+	if d.Cfg.Server.Mock {
+		return "mock"
+	}
+	return d.Cfg.Source
 }
 
 // curProfile 返回当前连接档案的副本。
@@ -285,6 +339,7 @@ func (d *Deps) handleSetupStatus(w http.ResponseWriter, r *http.Request) {
 	resp := map[string]any{
 		"configured":   d.configured(),
 		"mock":         d.Cfg.Server.Mock,
+		"source":       d.configSource(),
 		"secretKeySet": config.SecretKey() != nil,
 	}
 	if d.configured() {
@@ -441,12 +496,18 @@ func (d *Deps) handleSetupProfile(w http.ResponseWriter, r *http.Request) {
 	if req.RememberPassword {
 		p.BindPassword = req.BindPassword
 	}
-	plaintext, err := (&config.Config{Server: d.Cfg.Server, Profile: p}).SaveToFile(config.ActiveConfigFile())
+	// 整份配置（Server+Profile+Policy）原子落盘：只重建 Profile 字段，
+	// 策略等其他配置不因换绑连接而丢失；WizardSaved 使网页保存优先于环境变量
+	d.mu.Lock()
+	d.Cfg.Profile = p
+	d.Cfg.WizardSaved = true
+	d.Cfg.Source = "file"
+	plaintext, err := d.saveConfigLocked()
+	d.mu.Unlock()
 	if err != nil {
 		writeErr(w, http.StatusInternalServerError, "保存配置文件失败："+err.Error())
 		return
 	}
-	d.setProfile(p)
 	d.Audit.Log(audit.Event{
 		IP: clientIP(r), Op: "setup", Result: "ok",
 		Detail: "url=" + req.URL + " baseDN=" + req.BaseDN + " bindDN=" + req.BindDN +

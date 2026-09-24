@@ -81,6 +81,7 @@ func main() {
 	mux := http.NewServeMux()
 	mux.Handle("/api/", apiHandler)
 	mux.Handle("/healthz", apiHandler)
+	mux.Handle("/plda/", apiHandler) // phpLDAPadmin 同源反代（自动登录桥接用；api.Deps 内部转发到 PLDA）
 	mux.Handle("/", spaHandler())
 
 	srv := &http.Server{

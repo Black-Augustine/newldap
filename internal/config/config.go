@@ -35,8 +35,87 @@ type Server struct {
 type Config struct {
 	Server  Server  `yaml:"server"`
 	Profile Profile `yaml:"ldap"`
+	// Policy 是本工具的录入/校验策略（保存在本机配置文件，非目录数据——
+	// 工具自身的偏好不算业务数据，目录仍是唯一业务真相）。
+	Policy Policy `yaml:"policy"`
+	// WizardSaved：网页端（向导 / Base DN 修改页）保存过档案——
+	// 该档案优先于环境变量（LDAP_URL 等）持久生效，重启后仍以网页保存值为准。
+	WizardSaved bool `yaml:"wizard_saved"`
 	// Source 表示本次配置来源：env（环境变量生效）/ file（配置文件）/ default（内置默认）
 	Source string `yaml:"-"`
+}
+
+// Policy 录入与安全策略：管理员可在「系统设置」页调整；0 值在读取时归一回默认。
+type Policy struct {
+	PasswordMinLen     int  `yaml:"password_min_len" json:"passwordMinLen"`         // 密码最小长度（管理员重置/建人指定初始密码时校验）
+	PasswordComplexity bool `yaml:"password_complexity" json:"passwordComplexity"` // 要求同时含字母与数字
+	UIDMinLen          int  `yaml:"uid_min_len" json:"uidMinLen"`                  // 账号(uid)最小长度
+	UIDMaxLen          int  `yaml:"uid_max_len" json:"uidMaxLen"`                  // 账号(uid)最大长度
+	EmailAutofill      bool `yaml:"email_autofill" json:"emailAutofill"`          // 只填工号未填邮箱时自动拼接 工号@域名
+}
+
+// DefaultPolicy 默认策略（结构体不能声明为 const）。
+var DefaultPolicy = Policy{
+	PasswordMinLen:     8,
+	PasswordComplexity: true,
+	UIDMinLen:          2,
+	UIDMaxLen:          32,
+	EmailAutofill:      false,
+}
+
+// Normalized 返回钳制到安全区间的策略副本（0/越界值回默认）。
+func (p Policy) Normalized() Policy {
+	if p.PasswordMinLen < 4 {
+		p.PasswordMinLen = DefaultPolicy.PasswordMinLen
+	}
+	if p.PasswordMinLen > 64 {
+		p.PasswordMinLen = 64
+	}
+	if p.UIDMinLen < 1 {
+		p.UIDMinLen = DefaultPolicy.UIDMinLen
+	}
+	if p.UIDMaxLen < p.UIDMinLen || p.UIDMaxLen > 64 {
+		p.UIDMaxLen = DefaultPolicy.UIDMaxLen
+	}
+	if p.UIDMinLen > p.UIDMaxLen {
+		p.UIDMinLen = DefaultPolicy.UIDMinLen
+	}
+	return p
+}
+
+// ValidatePassword 按策略校验密码（空密码不在此校验——生成器产物已足够强）。
+func (p Policy) ValidatePassword(pw string) error {
+	p = p.Normalized()
+	if len(pw) < p.PasswordMinLen {
+		return fmt.Errorf("密码长度不足：策略要求至少 %d 位", p.PasswordMinLen)
+	}
+	if p.PasswordComplexity {
+		hasLetter, hasDigit := false, false
+		for _, c := range pw {
+			switch {
+			case c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z':
+				hasLetter = true
+			case c >= '0' && c <= '9':
+				hasDigit = true
+			}
+		}
+		if !hasLetter || !hasDigit {
+			return fmt.Errorf("密码复杂度不足：策略要求同时包含字母与数字")
+		}
+	}
+	return nil
+}
+
+// ValidateUID 按策略校验账号长度。
+func (p Policy) ValidateUID(uid string) error {
+	p = p.Normalized()
+	if len(uid) < p.UIDMinLen {
+		return fmt.Errorf("账号长度不足：策略要求至少 %d 个字符", p.UIDMinLen)
+	}
+	if len(uid) > p.UIDMaxLen {
+		return fmt.Errorf("账号过长：策略要求最多 %d 个字符", p.UIDMaxLen)
+	}
+	return nil
 }
 
 // DefaultConfigFile 是配置文件的默认路径（连接向导保存档案时写入）。
@@ -62,6 +141,7 @@ func defaultConfig() *Config {
 			Name: "默认连接",
 			URL:  "ldap://127.0.0.1:389",
 		},
+		Policy: DefaultPolicy,
 	}
 }
 
@@ -82,6 +162,7 @@ func Load() (*Config, error) {
 		if err := yaml.Unmarshal(b, cfg); err != nil {
 			return nil, fmt.Errorf("解析配置文件 %s: %w", file, err)
 		}
+		cfg.Policy = cfg.Policy.Normalized() // 文件中的 0/缺省值回默认
 		cfg.Source = "file"
 		// 解密已保存的 bind 密码
 		if IsEncrypted(cfg.Profile.BindPassword) {
@@ -99,6 +180,10 @@ func Load() (*Config, error) {
 	if cfg.Source == "" {
 		cfg.Source = "default"
 	}
+	// 网页端保存过的档案（WizardSaved）优先于环境变量：
+	// 管理员在网页上改过连接 / Base DN 后，重启不被 compose 的 env 覆盖回旧值。
+	// Server 级（addr/audit/plda 等）仍由环境变量控制。
+	wizardProfile, wizardSaved := cfg.Profile, cfg.WizardSaved
 	if v := os.Getenv("LDAP_URL"); v != "" {
 		cfg.Profile.URL = v
 		cfg.Source = "env"
@@ -120,6 +205,10 @@ func Load() (*Config, error) {
 	}
 	if v := os.Getenv("LDAP_INSECURE_SKIP_VERIFY"); v == "1" || v == "true" {
 		cfg.Profile.InsecureSkipVerify = true
+	}
+	if wizardSaved && cfg.Source == "env" {
+		cfg.Profile = wizardProfile
+		cfg.Source = "file" // 网页保存值生效：状态页按 file 显示
 	}
 	if v := os.Getenv("NEWLDAP_ADDR"); v != "" {
 		cfg.Server.Addr = v
@@ -143,7 +232,7 @@ func Load() (*Config, error) {
 // BindPassword 优先加密落盘（设置 NEWLDAP_SECRET_KEY 时）；未设置密钥则
 // 明文写入并在文件头注释中警告。返回是否以明文保存。
 func (c *Config) SaveToFile(path string) (plaintextSaved bool, err error) {
-	out := &Config{Server: c.Server, Profile: c.Profile}
+	out := &Config{Server: c.Server, Profile: c.Profile, Policy: c.Policy.Normalized(), WizardSaved: c.WizardSaved}
 	out.Server.Addr = c.Server.Addr
 	out.Profile.BindPassword = ""
 	if c.Profile.BindPassword != "" {

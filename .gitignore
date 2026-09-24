@@ -23,3 +23,5 @@ patch-*.cjs
 # 环境与密钥（示例 compose 中的密码仅供演示，真实环境用 .env 覆盖且不入库）
 .env
 *.env.local
+*~
+

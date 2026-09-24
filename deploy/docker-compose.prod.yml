@@ -1,4 +1,4 @@
-# NewLDAP + OpenLDAP + phpLDAPadmin 生产形态部署（<服务器IP>）
+# NewLDAP + OpenLDAP + phpLDAPadmin 生产形态部署（192.168.233.132）
 services:
   openldap:
     image: osixia/openldap:1.5.0
@@ -11,7 +11,7 @@ services:
       - openldap-data:/var/lib/ldap
       - openldap-config:/etc/ldap/slapd.d
     healthcheck:
-      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost:1389", "-b", "dc=example,dc=cn", "(objectClass=*)"]
+      test: ["CMD", "ldapsearch", "-x", "-H", "ldap://localhost:389", "-D", "cn=admin,dc=example,dc=cn", "-w", "admin123", "-b", "dc=example,dc=cn", "(objectClass=*)"]
       interval: 5s
       timeout: 5s
       retries: 24
@@ -22,14 +22,16 @@ services:
       openldap:
         condition: service_healthy
     environment:
-      LDAP_URL: ldap://openldap:1389
+      LDAP_URL: ldap://openldap:389
       LDAP_BIND_DN: cn=admin,dc=example,dc=cn
       LDAP_BIND_PASSWORD: admin123
       LDAP_BASE_DN: dc=example,dc=cn
       NEWLDAP_ADDR: ":8080"
-      NEWLDAP_PLDA_URL: http://<服务器IP>:8081
+      NEWLDAP_PLDA_URL: http://192.168.233.132:8081
+    volumes:
+      - newldap-data:/data
     ports:
-      - "8080:8080"
+      - "18080:8080"
     restart: unless-stopped
 
   phpldapadmin:
@@ -47,3 +49,4 @@ services:
 volumes:
   openldap-data:
   openldap-config:
+  newldap-data:
